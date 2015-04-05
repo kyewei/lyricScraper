@@ -21,7 +21,7 @@ Done as a weekend project to learn some backend tech.
 ####Commands
 * `/` for friendly instructions like the ones below :D
 * `/deleteall` to wipe
-* `/search/artist/[artist-name]/title/[song-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/store[yes|no,default=yes]/minimum/[number of results]` to request new lyrics
+* `/search/artist/[artist-name]/title/[song-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/store/[yes|no,default=yes]/minimum/[number of results]` to request new lyrics
 
 
 
