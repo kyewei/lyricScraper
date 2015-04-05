@@ -27,5 +27,5 @@ build/Release
 node_modules
 
 
-#mongodb database directory
+#mongodb database directory for cache, don't want this on git
 data

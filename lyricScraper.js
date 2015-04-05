@@ -31,7 +31,7 @@ var LyricSiteQuery = mongoose.model("LyricSiteQuery",lookupSchema);
 
 var geniusSiteOptions = {};
 // genius.com
-// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes
+// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes/store/yes/minimum/2
 // to 
 // http://genius.com/search?q=maroon+5+she+will+be+loved+
 geniusSiteOptions.name = "genius.com";
@@ -68,7 +68,7 @@ geniusSiteOptions.getSongInfo = function ($) {
 
 var songlyricsdotcomSiteOptions = {};
 // songlyrics.com
-// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes
+// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes/store/yes/minimum/2
 // to 
 // http://www.songlyrics.com/index.php?section=search&searchW=maroon+5+she+will+be+loved+&submit=Search
 songlyricsdotcomSiteOptions.name = "songlyrics.com";
@@ -106,7 +106,7 @@ songlyricsdotcomSiteOptions.getSongInfo = function ($) {
 
 /*var metrolyricsSiteOptions = {};
 // metrolyrics.com
-// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes
+// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes/store/yes/minimum/2
 // to
 // http://www.metrolyrics.com/search.html?search=maroon+5+she+will+be+loved+
 metrolyricsSiteOptions.name = "metrolyrics.com";
@@ -144,7 +144,7 @@ metrolyricsSiteOptions.getSongInfo = function ($) {
 
 var lyricsModeSiteOptions = {};
 // lyricsmode.com
-// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes
+// from /search/artist/maroon+5/title/she+will+be+loved/format/json/usecache/yes/store/yes/minimum/2
 // to
 // http://www.lyricsmode.com/search.php?search=maroon%205%20she%20will%20be%20loved%20
 lyricsModeSiteOptions.name = "lyricsmode.com";
@@ -198,10 +198,16 @@ function scrapSites(urlSegments) {
         obj.query.usecache = urlSegments[9].toLowerCase()==="yes";
     else
         obj.query.usecache = true;
-    if (urlSegments[10].toLowerCase()==="minimum")
-        obj.query.minimum = Number(urlSegments[11]);
+    if (urlSegments[10].toLowerCase()==="store")
+        obj.query.store = urlSegments[11].toLowerCase()==="yes";
+    else
+        obj.query.store = true;
+    if (urlSegments[12].toLowerCase()==="minimum")
+        obj.query.minimum = Number(urlSegments[13]);
     else
         obj.query.minimum = 2;
+    obj.query.failed = 0;
+    obj.query.totalsites = 3;
     obj.results = [];
     setTimeout(scrapeCustomSite,5,urlSegments,obj,geniusSiteOptions);
     setTimeout(scrapeCustomSite,5,urlSegments,obj,songlyricsdotcomSiteOptions);
@@ -245,18 +251,27 @@ function scrapeCustomSite(urlSegments, obj, customSiteInfo) {
             dbobj = new LyricSiteQuery(result);
             dbobj.save(function (err,dbobj) {
                 if (err) 
-                    console.log("Error",err,dbobj);
+                    console.log("Create Error",err,dbobj);
             });
         } else { // update existing document with newly fetched fields
-            dbobj.update(result).exec();
+            dbobj.update(result,function(err,dobj) {
+                if (err) 
+                    console.log("Update Error",err,dbobj);
+            });//.exec();
         }
-        
+        if (!obj.query.store) {
+            dbobj.remove(function(err,dbobj){
+                if (err) {
+                    console.log("Remove Error",err,dbobj);
+                }
+            });
+        }
         obj.results.push(result);
     }
 
     function mongoDBCacheLookupCallback(err, doc) { 
         if (err) {
-            console.log("Database lookup Error",err,doc);
+            console.log("Database lookup (Read) Error",err,doc);
         }
         dbobj = doc;
         // reads all info from mongodb ONLY IF database has entry and user wants to use cache
@@ -269,6 +284,13 @@ function scrapeCustomSite(urlSegments, obj, customSiteInfo) {
                 }
             }
             //console.log(result);
+            if (!obj.query.store) {
+                dbobj.remove(function(err,dbobj){
+                    if (err) {
+                        console.log("Remove Error",err,dbobj);
+                    }
+                });
+            }
             obj.results.push(result);
         } else { // http request to query actual lyrics site
             request({
@@ -290,8 +312,11 @@ function scrapeCustomSite(urlSegments, obj, customSiteInfo) {
 
         var $ = cheerio.load(html);
         var url = customSiteInfo.getLyricLink($); // call custom site scraper
-        if (!url)
+        if (!url) {
             console.log("Error scraping link from "+customSiteInfo.name);
+            // decrement max amount of sites that can be displayed since sites found nothing.
+            ++obj.query.failed;
+        }
 
         finalURL = url;
         console.log("Lyric URL is:",url);
@@ -323,7 +348,10 @@ function responseCallback (req, res) {
         var objResult = scrapSites(segments);
         var now = new Date();
         function waitForAtLeastX () {
-            if (objResult.results.length<objResult.query.minimum) {
+            if (objResult.results.length<objResult.query.minimum && 
+                objResult.results.length+objResult.query.failed < objResult.query.totalsites) {
+                // less than minimum BUT ALSO having not all sites scanned
+
                 setTimeout(waitForAtLeastX,200);
             } else {
                 if (objResult.query.format === "json") {
@@ -338,12 +366,28 @@ function responseCallback (req, res) {
             }
         }
         setTimeout(waitForAtLeastX,200);
+    } else if (segments.length >=2 && segments[1].toLowerCase() === "deleteall") {
+        LyricSiteQuery.remove({}, function(err) {
+            console.log("Lyrics Cache Deleted");
+            res.writeHead(200, {"Content-Type": "text/plain"});
+            res.write("Lyrics Cache Deleted.\n");
+            res.end();
+        });
     } else {
         res.writeHead(200, {"Content-Type": "text/plain"});
-        res.write("Hello.\n");
+        res.write("Hello. Welcome to the lyricScraper text/JSON based API\n");
+        res.write("\n");
+        res.write("\n");
         res.write("Use the following template for queries:\n");
+        res.write("\n");
         res.write("/search/artist/[artist-name]/title/[title-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/minimum/[minimum sites to query]\n");
-        res.write("Multiple words are separated with \+, like in \"maroon+5\"");
+        res.write("Multiple words are separated with \+, like in \"maroon+5\"\n");
+        res.write("\n");
+        res.write("\n");
+        res.write("Go to the following link to delete the cache:\n");
+        res.write("\n");
+        res.write("/deleteall\n");
+
         res.end();
     }
 }
