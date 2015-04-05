@@ -1,0 +1,21 @@
+{
+  "name": "lyricScraper",
+  "description": "Node.js based server API that looks up lyrics for given artist and song name with caching",
+  "version": "0.1.0",
+  "keywords": ["lyrics", "music"],
+  "author": "kyewei",
+  "main": "lyricScraper.js",
+  "repository":   {
+    "type": "git",
+    "url": "git://github.com/kyewei/lyricScraper.git"
+  },
+  "dependencies": {
+    "cheerio": "*",
+    "request": "*",
+    "mongoose": "*",
+  },
+  "devDependencies": {
+  },
+  "scripts" : {
+  }
+}
