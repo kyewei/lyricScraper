@@ -380,7 +380,7 @@ function responseCallback (req, res) {
         res.write("\n");
         res.write("Use the following template for queries:\n");
         res.write("\n");
-        res.write("/search/artist/[artist-name]/title/[title-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/minimum/[minimum sites to query]\n");
+        res.write("/search/artist/[artist-name]/title/[song-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/store[yes|no,default=yes]/minimum/[number of results]\n");
         res.write("Multiple words are separated with \+, like in \"maroon+5\"\n");
         res.write("\n");
         res.write("\n");
