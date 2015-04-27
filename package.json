@@ -13,7 +13,8 @@
     "cheerio": "*",
     "request": "*",
     "mongoose": "*",
-    "mongodb": "*"
+    "mongodb": "*",
+    "async": "*"
   },
   "devDependencies": {
   },
