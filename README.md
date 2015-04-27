@@ -1,9 +1,13 @@
 # lyricScraper
 
+lyricScraper is a RESTful Node.js based server API backed by a database 
+that fetches lyrics for given song artist and title on online sites, and caches the results. 
+The user can then access individual results through an ID or by various means (by Artist, Title, etc).
 
-Built using `Node.js`, with `mongoDB` as the backend database and `mongoose` to interface with it, 
-`request` and `cheerio` extra `npm` packages for fetching and scraping pages. 
-Done as a weekend project to learn some backend tech.
+It is built using `Node.js` using the `async` library, `Express.js` for routing, 
+`mongoDB` as the backend database through `mongoose`, 
+`request` and `cheerio` packages for fetching and scraping pages. 
+Done as a weekend project to learn some backend and JS web framework tech.
 
 ####Features and Things
 * Searches `genius.com`, `songlyrics.com`, `lyricsmode.com` for lyrics, and returns the first hit in JSON form
@@ -14,14 +18,16 @@ Done as a weekend project to learn some backend tech.
 
 ####How to Get It Up and Running
 * Tried only on Arch Linux x64, but theres no reason why it wouldn't work elsewhere
-* Need `mongodb` (obviously), and (atleast for me) navigate to a directory and `mkdir data && mongod --dbpath data`
-* Install dependencies with `npm install` if you clone this repo and navigate into the directory, otherwise the dependencies are listed in `package.json`
+* Need `mongodb` (obviously), and (atleast for me) navigate to a new directory and `mkdir data && mongod --dbpath data`
+* Install dependencies with `npm install` if you clone this repo and navigate into its directory, otherwise the dependencies are listed in `package.json`
 * Run: `node lyricScraper.js`
 
 ####Commands
-* `/` for friendly instructions like the ones below :D
-* `/deleteall` to wipe
-* `/search/artist/[artist-name]/title/[song-name]/format/[filetype,default=json]/usecache/[yes|no,default=yes]/store/[yes|no,default=yes]/minimum/[number of results]` to request new lyrics
+* GET `/api` for friendly instructions like the ones below :D
+* GET `/api/search/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data + database ID
+* GET `/api/id/xxxxxxxxxxxxxxxxxxxxxxxx` to look up cached lyrics by ID
+* DELETE `/api/id/xxxxxxxxxxxxxxxxxxxxxxxx` to delete cached lyrics by ID
+* DELETE `/api/id` to wipe cache clean
 
 
 

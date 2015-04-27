@@ -1,23 +1,25 @@
 {
   "name": "lyricScraper",
-  "description": "Node.js based server API that looks up lyrics for given artist and song name with caching",
-  "version": "0.1.0",
-  "keywords": ["lyrics", "music"],
+  "description": "RESTful Node.js based server API backed by a databse that fetches lyrics for given song artist and title on online sites, and caches the results",
+  "version": "0.2.0",
+  "keywords": [
+    "lyrics",
+    "music"
+  ],
   "author": "kyewei",
   "main": "lyricScraper.js",
-  "repository":   {
+  "repository": {
     "type": "git",
     "url": "git://github.com/kyewei/lyricScraper.git"
   },
   "dependencies": {
-    "cheerio": "*",
-    "request": "*",
-    "mongoose": "*",
-    "mongodb": "*",
-    "async": "*"
+    "async": "^0.9.0",
+    "cheerio": "^0.19.0",
+    "express": "^4.12.3",
+    "mongodb": "^2.0.28",
+    "mongoose": "^4.0.2",
+    "request": "^2.55.0"
   },
-  "devDependencies": {
-  },
-  "scripts" : {
-  }
+  "devDependencies": {},
+  "scripts": {}
 }
