@@ -4,12 +4,15 @@ var cheerio = require("cheerio");
 var mongoose = require("mongoose");
 var async = require("async");
 var express = require("express");
+var bodyParser = require('body-parser')
 
 var app = express();
 var port = process.env.PORT || 22096;
 var router = express.Router();
 
 app.use("/api", router);
+router.use(bodyParser.urlencoded({ extended: true }));
+router.use(bodyParser.json());
 app.listen(port);
 app.set('json spaces', 4);
 
@@ -48,7 +51,7 @@ var searchQuerySchema = new mongoose.Schema({
 });
 
 var lyricData = mongoose.model("lyricData",lyricDataSchema);
-
+var searchQuery = mongoose.model("searchQuery",searchQuerySchema);
 
 
 
@@ -77,8 +80,8 @@ geniusSiteOptions.getLyricLink = function ($) {
 };
 geniusSiteOptions.buildSearchURL = function(obj) {
     var searchURL = "http://genius.com/search?q=";
-    searchURL += obj.query.artist ? obj.query.artist + "+": "";
-    searchURL += obj.query.title ? obj.query.title + "+": "";
+    searchURL += obj.query.artist ? obj.query.artist.toLowerCase().replace(/ /g,"+") + "+": "";
+    searchURL += obj.query.title ? obj.query.title.toLowerCase().replace(/ /g,"+") + "+": "";
     return searchURL;
 };
 geniusSiteOptions.getSongInfo = function ($) {
@@ -123,8 +126,8 @@ songlyricsdotcomSiteOptions.getLyricLink = function ($) {
 };
 songlyricsdotcomSiteOptions.buildSearchURL = function(obj) {
     var searchURL = "http://www.songlyrics.com/index.php?section=search&searchW=";
-    searchURL += obj.query.artist ? obj.query.artist + "+": "";
-    searchURL += obj.query.title ? obj.query.title + "+": "";
+    searchURL += obj.query.artist ? obj.query.artist.toLowerCase().replace(/ /g,"+") + "+": "";
+    searchURL += obj.query.title ? obj.query.title.toLowerCase().replace(/ /g,"+") + "+": "";
     searchURL += "&submit=Search";
     return searchURL;
 };
@@ -208,8 +211,8 @@ lyricsModeSiteOptions.getLyricLink = function ($) {
 };
 lyricsModeSiteOptions.buildSearchURL = function(obj) {
     var searchURL = "http://www.lyricsmode.com/search.php?search=";
-    searchURL += obj.query.artist ? obj.query.artist + "%20": "";
-    searchURL += obj.query.title ? obj.query.title + "%20": "";
+    searchURL += obj.query.artist ? obj.query.artist.toLowerCase().replace(/ /g,"+") + "%20": "";
+    searchURL += obj.query.title ? obj.query.title.toLowerCase().replace(/ /g,"+") + "%20": "";
     return searchURL;
 };
 lyricsModeSiteOptions.getSongInfo = function ($) {
@@ -231,15 +234,13 @@ lyricsModeSiteOptions.getSongInfo = function ($) {
 };
 
 
-
-
 function scrapSites(queryStr, obj) {
     
     obj.query = {};
     queryStr.split(/&/).map(function addQueryToObj (str) {
         var a = str.split(/=/);
         //console.log(str);
-        obj.query[a[0].toLowerCase()] = a[1].toLowerCase();
+        obj.query[a[0].toLowerCase()] = a[1].replace(/\+/g," ");
     });
     if (!obj.query.format) {
         obj.query.format = "json";
@@ -445,15 +446,108 @@ router.get("/", function (req, res) {
 });
 
 router.get("/search", function (req, res) {
-    var toJSON = { "request": req.url,
+    var toJSON = { "request": "/api"+req.url,
                     "method": req.method,
                     "message": "Invalid, use "+"/api/search/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]"
     };
     res.json(toJSON);
 
 });
+router.post("/search", function (req, res) {
+    var toJSON = { "request": "/api"+req.url,
+                    "method": req.method
+    };
+    var dbobj = new searchQuery({"title":null, "artist":null}).save(function (err,dbobj) {
+        if (err) {
+            console.log("Create Error",err,dbobj);
+            return;
+        }
+        toJSON.message = "New search created at: "+"/api/search/id/"+dbobj.id;
+        res.json(toJSON);
+    });
+});
+router.route("/search/id")
+.delete(function(req, res) {
+    var toJSON = { "request": "/api"+req.url,
+                    "method": req.method
+    };
+    if (!dbConnected){
+        toJSON.message = "Database not connected";
+        res.json(toJSON);
+    } else {
+        searchQuery.remove({}, function(err) {
+            toJSON.message = "Entire search cache deleted";
+            res.json(toJSON);
+        });
+    }
+});
+router.route("/search/id/:id")
+.all(function(req, res, next) {
+    var toJSON = { "request": "/api"+req.url,
+                    "method": req.method
+    };
+    res.toJSON = toJSON;
+    if (!dbConnected) {
+        res.toJSON.message = "Database not connected";
+        res.json(res.toJSON);
+        return;
+    } 
+    searchQuery.findById(req.params.id, function searchbyIdCallback (err, dbobj) {
+        if (err || !dbobj) {
+            res.toJSON.message = "Search item not found";
+            res.json(res.toJSON);
+        } else {
+            res.dbobj = dbobj;
+            next();
+        }
+    });
+})
+.get(function (req, res) {
+    var result = {};
+    for (var field in searchQuery.schema.paths) {
+        if (field.charAt(0) !== "_") {
+            result[field] = res.dbobj[field];
+        }
+    }
+    result.id = res.dbobj.id;
+    result.links = {};
+    result.links.href = "/api/search/id/"+result.id;
+    
+    res.toJSON.results = [result];
+    res.json(res.toJSON);
+})
+.put(function (req, res) {
+    //console.log(req.body);
+    var updated = [];
+    if (req.body.title) {
+        res.dbobj.title = req.body.title;
+        updated.push("title");
+    }
+    if (req.body.artist) {
+        res.dbobj.artist = req.body.artist;
+        updated.push("artist");
+    }
+    if (req.body.title || req.body.artist)
+        res.dbobj.save();
+    res.toJSON.message = "Updated fields: "+ (updated.length > 0 ? updated.join(", ") : "none");
+    res.json(res.toJSON);
+})
+.delete(function (req, res) {
+    res.dbobj.remove(function(err,dbobj){
+        if (err) {
+            res.toJSON.message = "Found, but remove error"
+        } else {
+            res.toJSON.message = "Search item deleted";
+        }
+        res.json(res.toJSON);
+    });
+});
 
-router.get("/search/:query", function (req, res) {
+
+
+
+
+router.get("/search/query/:query", function (req, res) {
     var toJSON = { "request": "/api"+req.url,
                     "method": req.method
     };
@@ -497,7 +591,7 @@ router.route("/id")
             res.json(toJSON);
         } else {
             lyricData.remove({}, function(err) {
-                toJSON.message = "Entire cache deleted";
+                toJSON.message = "Entire lyrics cache deleted";
                 res.json(toJSON);
             });
         }
@@ -515,7 +609,7 @@ router.route("/id/:id")
     } else {
         lyricData.findById(req.params.id, function searchbyIdCallback(err, dbobj) {
             if (err || !dbobj) {
-                res.toJSON.message = "Not found";
+                res.toJSON.message = "Lyrics item not found";
                 res.json(res.toJSON);
             } else {
                 res.dbobj = dbobj;
@@ -544,7 +638,7 @@ router.route("/id/:id")
         if (err) {
             res.toJSON.message = "Found, but remove error"
         } else {
-            res.toJSON.message = "Item deleted";
+            res.toJSON.message = "Lyrics item deleted";
         }
         res.json(res.toJSON);
     });
