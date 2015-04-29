@@ -4,6 +4,9 @@ lyricScraper is a RESTful Node.js based server API backed by a database
 that fetches lyrics for given song artist and title on online sites, and caches the results. 
 The user can then access individual results through an ID or by various means (by Artist, Title, etc).
 
+Experimental version is up on Heroku in the link listed in the repo description. 
+It uses 1 Dyno for now.
+
 It is built using `Node.js` using the `async` library, `Express.js` for routing, 
 `mongoDB` as the backend database through `mongoose`, 
 `request` and `cheerio` packages for fetching and scraping pages. 
@@ -24,7 +27,7 @@ Done as a weekend project to learn some backend and JS web framework tech.
 
 ####Commands
 * GET `/api` for friendly instructions like the ones below :D
-* GET `/api/query/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data and unique lookup ID
+* GET `/api/query/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data and unique lookup ID, multiple words are separated with `+`
 * POST `/api/search` to create a custom search (optional: with parameters as data), will return URL of new resource: `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx`
 * DELETE `/api/search` to wipe all search resources clean
 * GET `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx` to display search item's current parameters (artist, title) and sites and their results

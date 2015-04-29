@@ -32,7 +32,9 @@ db.once("open", function() {
 
 // Database is named lyricScraper
 // Suggested that the database be stored in a working directory
-mongoose.connect("mongodb://localhost/lyricScraper");
+// I set an environment variable on Heroku's Dyno.
+var uri = process.env.MONGOLAB_URI || "mongodb://localhost/lyricScraper";
+mongoose.connect(uri);
 
 var lyricDataSchema = new mongoose.Schema({
     source: String,
@@ -417,7 +419,7 @@ router.get("/", function (req, res) {
                                                             "acceptedMethods": ["GET", "PUT", "DELETE"] },
                             "view-site-results": { "apiUrl": "/api/search/xxxxxxxxxxxxxxxxxxxxxxxx/x",
                                                         "example": "/api/search/553fe99a6dce0876189c92a5/1",
-                                                        "acceptedMethods": ["GET"] }
+                                                        "acceptedMethods": ["GET"] },
                             "view-individual-result": { "apiUrl": "/api/search/xxxxxxxxxxxxxxxxxxxxxxxx/x/x",
                                                         "example": "/api/search/553fe99a6dce0876189c92a5/1/2",
                                                         "acceptedMethods": ["GET"] }
