@@ -11,9 +11,9 @@ Done as a weekend project to learn some backend and JS web framework tech.
 
 ####Features and Things
 * Searches `genius.com`, `songlyrics.com`, `lyricsmode.com` for lyrics, and returns the first hit in JSON form
-* Only works on static sites now, (no AngularJS sites)
-* Saves lyrics to the server's local "lyricScraper" mongoDB database
-* CRUD (Create-Read-Update-Delete) for queries
+* Works on static sites, (no AngularJS sites)
+* Caches lyrics to the server's local "lyricScraper" mongoDB database
+* CRUD (Create-Read-Update-Delete) for queries implemented using HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`)
 * Port `22096`
 
 ####How to Get It Up and Running
@@ -24,11 +24,14 @@ Done as a weekend project to learn some backend and JS web framework tech.
 
 ####Commands
 * GET `/api` for friendly instructions like the ones below :D
-* GET `/api/search/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data + database ID
-* POST `/api/search` to create a custom search, will return new `/api/search/id/xxxxxxxxxxxxxxxxxxxxxxxx/`
-* GET `/api/search/id/xxxxxxxxxxxxxxxxxxxxxxxx` to display search item's current parameters (artist, title) and any results
-* PUT `/api/search/id/xxxxxxxxxxxxxxxxxxxxxxxx` with parameters to update search parameters (artist, title)
-* DELETE `/api/search/id/xxxxxxxxxxxxxxxxxxxxxxxx` will delete the search query
+* GET `/api/query/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data and unique lookup ID
+* POST `/api/search` to create a custom search (optional: with parameters as data), will return URL of new resource: `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx`
+* DELETE `/api/search` to wipe all search resources clean
+* GET `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx` to display search item's current parameters (artist, title) and sites and their results
+* PUT `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx` with data to update search parameters (artist, title)
+* DELETE `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx` will delete the search query
+* GET `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx/x` to display a particular site's search results
+* GET `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx/x/x` to display a particular site's individual search result, will return unique ID to look up using the format below
 * GET `/api/id/xxxxxxxxxxxxxxxxxxxxxxxx` to look up cached lyrics by ID
 * DELETE `/api/id/xxxxxxxxxxxxxxxxxxxxxxxx` to delete cached lyrics by ID
 * DELETE `/api/id` to wipe cache clean
