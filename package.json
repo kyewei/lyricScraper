@@ -1,7 +1,7 @@
 {
   "name": "lyricScraper",
-  "description": "RESTful Node.js based server API backed by a databse that fetches lyrics for given song artist and title on online sites, and caches the results",
-  "version": "0.2.0",
+  "description": "Angular web app and RESTful Node.js based server API backed by a databse that fetches lyrics for given song artist and title on online sites, and caches the results",
+  "version": "0.3.0",
   "keywords": [
     "lyrics",
     "music"

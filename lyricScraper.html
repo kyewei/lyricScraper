@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<!--Kye Wei-->
+<!--github.com/kyewei/lyricScraper-->
+<html>
+    <head>
+        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+        <title>lyricScraper Web Interface</title>
+
+        <a href="https://github.com/kyewei/lyricScraper">
+            <img style="position: absolute; top: 0; right: 0; border: 0;"
+                 src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67"
+                 alt="Fork me on GitHub"
+                 onload="this.width/=1.25;this.onload=null;"
+                 data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
+        </a>
+
+
+        <!--Inlined both CSS and JS since it will be pretty short-->
+        <style>
+            #title, #instructions, #api-info{
+                text-align: center;
+            }
+            #form{
+                width: 40%;
+                margin: 10px auto;
+            }
+            #result-table, #result-item{
+                min-width: 50%;
+                width: auto;
+                margin: 10px auto;
+            }
+            #result-item th {
+                white-space:pre;
+            }
+            #sitemax-spinner {
+                width: 50px;
+                display: inline-block;
+                padding-right: 6px;
+            }
+            #back {
+                text-align: right;
+            }
+        </style>
+        <script>
+            var app = angular.module("lyricScraperAngularApp", []);
+            app.controller("resultController", function ($scope) {
+                $scope.apiResult=[];//[{title:"Sing",artist:"Ed Sheeran", url:"google.ca"}];
+                $scope.show = "none"; // "none", "list", "item"
+                $scope.listURL = null;
+                $scope.selected = {};
+
+                $scope.handleSubmit = function ($event) {
+                    var artist=document.getElementById("artist-box").value;
+                    var title=document.getElementById("title-box").value;
+                    var sitemax=document.getElementById("sitemax-spinner").value;
+
+                    function updateTable (url) {
+                        var http = new XMLHttpRequest();
+                        http.open("GET", "http:\/\/"+window.location.host+url, true);
+                        http.timeout=10000;
+                        http.onreadystatechange = function() {//Call a function when the state changes.
+                            if(http.readyState == 4 && http.status == 200) {
+                                var queryresult = JSON.parse(http.responseText).results[0].queryresults;
+                                //console.log(queryresult);
+                                for (var i=0; i<queryresult.length; ++i) {
+                                    for (var j=0; j<queryresult[i].choices.length; ++j) {
+                                        $scope.apiResult.push({
+                                            title:queryresult[i].choices[j].title,
+                                            artist:queryresult[i].choices[j].artist,
+                                            site:queryresult[i].site,
+                                            siterank:j+1,
+                                            sourceurl:queryresult[i].choices[j].url,
+                                            apiurl:queryresult[i].choices[j].apiUrl
+                                        });
+                                    }
+                                }
+                                //console.log($scope.apiResult);
+                                $scope.$apply();
+                            }
+                        }
+                        http.send();
+                    }
+
+                    if ($scope.listURL) {
+                        var http = new XMLHttpRequest();
+                        var url = "http:\/\/"+window.location.host+$scope.listURL;
+                        http.open("DELETE", url, true);
+                        http.timeout = 10000;
+                        http.send();
+                        $scope.listURL=null;
+                    }
+
+                    if ($event.target.id==="query"){
+                        $scope.show = "list";
+                        $scope.apiResult=[];
+
+                        var http = new XMLHttpRequest();
+                        var url = "http:\/\/"+window.location.host+"/api/search";
+                        var params = "artist="+artist+"&"+"title="+title+"&"+"sitemax="+sitemax;
+                        console.log(params);
+                        http.open("POST", url, true);
+                        http.timeout = 10000;
+                        //Send the proper header information along with the request
+                        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                        http.onreadystatechange = function() {//Call a function when the state changes.
+                            if(http.readyState == 4 && http.status == 200) {
+                                var geturl=JSON.parse(http.responseText).message.match(/\/api.*$/)[0];
+                                console.log("POSTED: "+geturl);
+                                $scope.listURL = geturl;
+                                updateTable(geturl);
+                            }
+                        }
+                        http.send(params);
+                    }
+                    else if ($event.target.id==="lucky"){
+                        $scope.show = "item";
+                        $scope.selected = {};
+                        var http = new XMLHttpRequest();
+                        http.open("GET", "http:\/\/"+window.location.host+"/api/query/artist="+artist+"&title="+title+"&minimum=1", true);
+                        http.timeout=10000;
+                        http.onreadystatechange = function() {//Call a function when the state changes.
+                            if(http.readyState == 4 && http.status == 200) {
+                                var result = JSON.parse(http.responseText).results[0];
+                                $scope.selected = result;
+                                //console.log($scope.apiResult);
+                                $scope.$apply();
+                            }
+                        }
+                        http.send();
+                    }
+                };
+
+                $scope.handleItemSelect = function ($event) {
+                    var url = $event.target.children[0].textContent;
+                    console.log(url);
+                    $scope.show = "item";
+                        $scope.selected = {};
+                        var http = new XMLHttpRequest();
+                        http.open("GET", "http:\/\/"+window.location.host+url, true);
+                        http.timeout=10000;
+                        http.onreadystatechange = function() {//Call a function when the state changes.
+                            if(http.readyState == 4 && http.status == 200) {
+                                var result = JSON.parse(http.responseText).results[0];
+                                $scope.selected = result;
+                                //console.log($scope.apiResult);
+                                $scope.$apply();
+                            }
+                        }
+                    http.send();
+                };
+                $scope.backButton = function ($event) {
+                    $scope.show = "list";
+                }
+            });
+        </script>
+    </head>
+    <body ng-app="lyricScraperAngularApp" ng-controller="resultController">
+        <h3 id="title"><b>Welcome to the lyricScraper web interface.</b></h3>
+        <div id="instructions">
+            Enter artist, title in the fields below, and press one of the buttons to proceed.<br>
+            Search queries expire after <b>24 hours</b>.<br>
+            Individual search results are cached, guaranteed to be less than <b>1 hour</b> old.
+        </div>
+        <div id="api-info">Direct access to the API can be found <a href="api">here</a>.</div>
+
+        <div id="form">
+            <div class="form-group">
+                <label for="titleBox">Artist</label>
+                <input class="form-control" id="artist-box" name="Artist" type="text" placeholder="Maroon 5">
+            </div>
+            <div class="form-group">
+                <label for="titleBox">Title</label>
+                <input class="form-control" id="title-box" name="Title" type="text" placeholder="She Will Be Loved">
+            </div>
+            <div class="form-group">
+                <label for="titleBox">Max Results Per Site</label>
+                <input class="form-control" id="sitemax-spinner" type="number" min="0" max="5" step="1" value="2" name="Results Per Site"/>
+            </div>
+            <button class="btn btn-primary" id="query" ng-click="handleSubmit($event)">Query</button>
+            <button class="btn btn-success" id="lucky" ng-click="handleSubmit($event)">I'm Feeling Lucky (Nondeterministic)</button>
+            <button ng-show="listURL && show!=='list'" class="btn btn-default" id="back" ng-click="backButton($event)">Back</button>
+        </div>
+
+        <br>
+        
+        <div class="results">
+            <table ng-show="show==='list'" id="result-table" class="table table-striped table-hover table-bordered">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Title</th>
+                    <th>Artist</th>
+                    <th>Site</th>
+                    <th>Site Rank</th>
+                    <th>API URL</th>
+                    <th>Source URL</th>
+                </tr>
+                </thead>
+                <tfoot>
+
+                </tfoot>
+                <tbody>
+                    <tr ng-repeat="item in apiResult">
+                        <td><button class="btn btn-primary" id="view" ng-click="handleItemSelect($event)">View<div ng-show="false">{{item.apiurl}}</div></button></td>
+                        <td>{{item.title }}</td>
+                        <td>{{item.artist }}</td>
+                        <td>{{item.site }}</td>
+                        <td>{{item.siterank }}</td>
+                        <td>{{item.apiurl }}</td>
+                        <td>{{item.sourceurl }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <table ng-show="show==='item'" id="result-item" class="table table-striped table-hover table-bordered">
+                <tbody>
+                    <tr><th>Title</th><th>{{selected.title }} </th></tr>
+                    <tr><th>Artist</th><th>{{selected.url }} </th></tr>
+                    <tr><th>API URL</th><th>{{selected.artist }} </th></tr>
+                    <tr><th>Album</th><th>{{selected.album }} </th></tr>
+                    <tr><th>Source URL</th><th>{{selected.url }} </th></tr>
+                    <tr><th>API URL</th><th>{{selected.apiUrl }} </th></tr>
+                    <tr><th>Lyrics</th><th>{{selected.lyrics }} </th></tr>
+                </tbody>
+            </div>
+        </div>
+    </body>
+</html>

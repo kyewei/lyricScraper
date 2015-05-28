@@ -1,22 +1,23 @@
 # lyricScraper
 
-lyricScraper is a RESTful Node.js based server API backed by a database 
+lyricScraper is an AngularJS web app and RESTful Node.js based server API backed by a database 
 that fetches lyrics for given song artist and title on online sites, and caches the results. 
 The user can then access individual results through an ID or by various means (by Artist, Title, etc).
 
 Experimental version is up on Heroku in the link listed in the repo description. 
 It uses 1 Dyno for now.
 
-It is built using `Node.js` using the `async` library, `Express.js` for routing, 
+It is built using `Node.js` using the `async` library, `Express` for routing, 
 `mongoDB` as the backend database through `mongoose`, 
 `request` and `cheerio` packages for fetching and scraping pages. 
+The web front-end was made using `AngularJS`.
 Done as a weekend project to learn some backend and JS web framework tech.
 
 ####Features and Things
 * Searches `genius.com`, `songlyrics.com`, `lyricsmode.com` for lyrics, and returns the first hit in JSON form
 * Works on static sites, (no AngularJS sites)
 * Caches lyrics to the server's local "lyricScraper" mongoDB database
-* CRUD (Create-Read-Update-Delete) for queries implemented using HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`)
+* RESTful CRUD (Create-Read-Update-Delete) for queries implemented using HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`)
 * Port `22096`
 
 ####How to Get It Up and Running
@@ -24,6 +25,9 @@ Done as a weekend project to learn some backend and JS web framework tech.
 * Need `mongodb` (obviously), and (atleast for me) navigate to a new directory and `mkdir data && mongod --dbpath data`
 * Install dependencies with `npm install` if you clone this repo and navigate into its directory, otherwise the dependencies are listed in `package.json`
 * Run: `node lyricScraper.js`
+
+####Web Interface
+* Go to the `/` directory on the hosted domain
 
 ####Commands
 * GET `/api` for friendly instructions like the ones below :D

@@ -1,3 +1,6 @@
+//Kye Wei
+//github.com/kyewei/lyricScraper
+
 var http = require("http");
 var request = require("request");
 var cheerio = require("cheerio");
@@ -9,6 +12,11 @@ var bodyParser = require('body-parser')
 var app = express();
 var port = process.env.PORT || 22096;
 var router = express.Router();
+
+
+app.get("/", function (req, res) {
+    res.sendFile(__dirname + "/lyricScraper.html");
+});
 
 app.use("/api", router);
 router.use(bodyParser.urlencoded({ extended: true }));
@@ -50,6 +58,7 @@ var lyricDataSchema = new mongoose.Schema({
 var searchQuerySchema = new mongoose.Schema({
     title: String,
     artist: String,
+    sitemax: Number,
     accessdate: Date,
     accessutc: Number,
     queryresults: [ { site: String, choices: [ {title: String, artist: String, url: String} ] } ]
@@ -66,14 +75,14 @@ var geniusSiteOptions = {};
 // to 
 // http://genius.com/search?q=maroon+5+she+will+be+loved+
 geniusSiteOptions.name = "genius.com";
-geniusSiteOptions.getLyricLink = function ($) {
+geniusSiteOptions.getLyricLink = function ($,n) {
     var links = $("li.search_result a");
     var titles = $("li.search_result a .song_title");
     var artists = $("li.search_result a .primary_artist_name");
     if (links.length === 0 || titles.length === 0 || artists.length === 0)
         return;
     var result = [];
-    for (var i=0; i < 5; ++i) {
+    for (var i=0; i < n; ++i) {
         if (links[i] && titles[i] && artists[i]) {
             result.push({"title": $(titles[i]).text(),
                             "artist": $(artists[i]).text(),
@@ -94,7 +103,6 @@ geniusSiteOptions.getSongInfo = function ($) {
     var artist = $("h1.title_and_authors span.text_artist").text().trim();
     var album = $("a.collection_title span").text().trim() || $(".album_title_and_track_number").text().trim();
     var lucky = $("div.lyrics p").text();
-    //console.log(lucky);
     var genius = {};
     genius.source = "genius.com";
     genius.lyrics = lucky;
@@ -113,13 +121,13 @@ var songlyricsdotcomSiteOptions = {};
 // to 
 // http://www.songlyrics.com/index.php?section=search&searchW=maroon+5+she+will+be+loved+&submit=Search
 songlyricsdotcomSiteOptions.name = "songlyrics.com";
-songlyricsdotcomSiteOptions.getLyricLink = function ($) {
+songlyricsdotcomSiteOptions.getLyricLink = function ($,n) {
     var links = $("div.serpresult h3 a");
     var info = $("div.serpresult .serpdesc-2 a");
     if (links.length === 0 || info.length === 0)
         return;
     var result = [];
-    for (var i=0; i < 5; ++i) {
+    for (var i=0; i < n; ++i) {
         if (links[i] && info[2*i]) {
             result.push({"title": links[i].attribs.title,
                             "artist": $(info[2*i]).text(),
@@ -162,15 +170,15 @@ var lyricsModeSiteOptions = {};
 // to
 // http://www.lyricsmode.com/search.php?search=maroon%205%20she%20will%20be%20loved%20
 lyricsModeSiteOptions.name = "lyricsmode.com";
-lyricsModeSiteOptions.getLyricLink = function ($) {
+lyricsModeSiteOptions.getLyricLink = function ($,n) {
     var info = $("table a.search_highlight");
     if (info.length === 0)
         return;
     var result = [];
-    for (var i=0; i < 5; ++i) {
+    for (var i=0; i < n; ++i) {
         if (info[2*i]) {
-            result.push({"title": $(info[2*i]).text(),
-                            "artist": $(info[2*i+1]).text().split("lyrics")[0].trim(),
+            result.push({"artist": $(info[2*i]).text(),
+                            "title": $(info[2*i+1]).text().split("lyrics")[0].trim(),
                             "url": "http://www.lyricsmode.com"+info[2*i+1].attribs.href
                         });
         }
@@ -208,6 +216,8 @@ customSites["genius.com"] = geniusSiteOptions;
 customSites["songlyrics.com"] = songlyricsdotcomSiteOptions;
 customSites["lyricsmode.com"] = lyricsModeSiteOptions;
 
+
+var databaseRefreshRate = 60*60*1000; // 60 minutes in milliseconds
 
 function scrapSites(queryStr, obj) {
     
@@ -277,7 +287,7 @@ function scrapeCustomSite(obj, customSiteInfo) {
             console.log("Searching "+ customSiteInfo.name);
 
             var $ = cheerio.load(html);
-            var urlArr = customSiteInfo.getLyricLink($); // call custom site scraper
+            var urlArr = customSiteInfo.getLyricLink($,1); // call custom site scraper
             if (!urlArr || urlArr.length === 0) {
                 console.log("Error scraping link from "+customSiteInfo.name);
                 // decrement max amount of sites that can be displayed since sites found nothing.
@@ -410,7 +420,7 @@ router.get("/", function (req, res) {
                             "example": "/api/query/artist=maroon+5&title=she+will+be+loved&format=json&minimum=2",
                             "acceptedMethods": ["GET"]
     };
-    toJSON.next.search = {  "search-parameters": ["artist", "title"],
+    toJSON.next.search = {  "search-parameters": ["artist", "title", "sitemax"],
                             "create": { "apiUrl": "/api/search",
                                         "example": "/api/search",
                                         "acceptedMethods": ["POST", "DELETE"] },
@@ -440,6 +450,7 @@ router.route("/search")
     var obj = {};
     obj.title = req.body.title || "";
     obj.artist = req.body.artist  || "";
+    obj.sitemax = Number(req.body.sitemax)  || 2;
     obj.accessdate = new Date();
     obj.accessutc = obj.accessdate.getTime();
     var dbobj = new searchQuery(obj).save(function (err,dbobj) {
@@ -449,6 +460,21 @@ router.route("/search")
         }
         toJSON.message = "New search created at: "+"/api/search/"+dbobj.id;
         res.json(toJSON);
+
+        setTimeout(function(id) {
+            searchQuery.findById(id, function searchbyIdCallback (err, dbobj) {
+                if (err || !dbobj) {
+                } else {
+                    dbobj.remove(function(err,dbobj){
+                        if (err) {
+                            console.log("Failed to delete search item "+dbobj.id+" after 1 day.");
+                        } else {
+                            console.log("Search item "+dbobj.id+" deleted after 1 day.");
+                        }
+                    });
+                }
+            });
+        }, 24*60*60*1000, dbobj.id); // deletes search object after a day
     });
 })
 .delete(function(req, res) {
@@ -501,7 +527,7 @@ router.route("/search/:id")
                 function searchURLRequestCallback(res, html, callback) {
 
                     var $ = cheerio.load(html);
-                    var urlArr = customSiteInfo.getLyricLink($); // call custom site scraper
+                    var urlArr = customSiteInfo.getLyricLink($,dbobj.sitemax); // call custom site scraper
                     
                     if (!urlArr || urlArr.length === 0) {
                         console.log("Error scraping link from "+customSiteInfo.name);
@@ -584,6 +610,10 @@ router.route("/search/:id")
     if (req.body.artist) {
         res.dbobj.artist = req.body.artist;
         updated.push("artist");
+    }
+    if (req.body.sitemax) {
+        res.dbobj.sitemax = Number(req.body.sitemax);
+        updated.push("sitemax");
     }
 
     function searchResultsFetchedCallback(dbobj) {
@@ -826,12 +856,47 @@ router.route("/id/:id")
             } else {
                 res.toJSON.message = "Found";
                 res.dbobj = dbobj;
-                next();
+
+
+                if (Math.abs(new Date(dbobj.accessdate) - new Date()) >= databaseRefreshRate ) { 
+                    function lyricURLRequestCallback(err,res,html) { // callback for when the final lyric page loads
+                        var $ = cheerio.load(html);
+                        var customSiteInfo = customSites[dbobj.source];
+                        var result = customSiteInfo.getSongInfo($); // call custom site scraper
+                        result.url = dbobj.url;
+                        console.log(customSiteInfo.name+" updated lyrics Ready");
+
+                        function databaseFinishCallback() {
+                            if (dbobj) {
+                                result.id = dbobj.id;
+                                result.apiUrl = "/api/id/"+result.id;
+                            }
+                            next();
+                        }
+                        // update existing document with newly fetched fields
+                        dbobj.update(result,function(err,dobj) {
+                            if (err) {
+                                console.log("Update Error",err,dbobj);
+                                return;
+                            }
+                            databaseFinishCallback();
+                        });//.exec();
+                    }
+                    request({
+                        uri: dbobj.url,
+                        method: "GET", 
+                        timeout: 10000,
+                        followRedirect:true,
+                        maxRedirects: 10
+                    }, lyricURLRequestCallback);
+                } else {
+                    next();
+                }
             }
         });
     }
 })
-.get(function (req, res) {
+.get(function (req, res) {;
     var result = {};
     for (var field in lyricData.schema.paths) {
         if (field.charAt(0) !== "_") {
