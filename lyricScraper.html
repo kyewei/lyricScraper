@@ -3,8 +3,8 @@
 <!--github.com/kyewei/lyricScraper-->
 <html>
     <head>
-        <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+        <script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.14/angular.min.js"></script>
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
 
         <title>lyricScraper Web Interface</title>
 
@@ -58,7 +58,7 @@
 
                     function updateTable (url) {
                         var http = new XMLHttpRequest();
-                        http.open("GET", "http:\/\/"+window.location.host+url, true);
+                        http.open("GET", "//"+window.location.host+url, true);
                         http.timeout=10000;
                         http.onreadystatechange = function() {//Call a function when the state changes.
                             if(http.readyState == 4 && http.status == 200) {
@@ -85,7 +85,7 @@
 
                     if ($scope.listURL) {
                         var http = new XMLHttpRequest();
-                        var url = "http:\/\/"+window.location.host+$scope.listURL;
+                        var url = "//"+window.location.host+$scope.listURL;
                         http.open("DELETE", url, true);
                         http.timeout = 10000;
                         http.send();
@@ -97,7 +97,7 @@
                         $scope.apiResult=[];
 
                         var http = new XMLHttpRequest();
-                        var url = "http:\/\/"+window.location.host+"/api/search";
+                        var url = "//"+window.location.host+"/api/search";
                         var params = "artist="+artist+"&"+"title="+title+"&"+"sitemax="+sitemax;
                         console.log(params);
                         http.open("POST", url, true);
@@ -118,7 +118,7 @@
                         $scope.show = "item";
                         $scope.selected = {};
                         var http = new XMLHttpRequest();
-                        http.open("GET", "http:\/\/"+window.location.host+"/api/query/artist="+artist+"&title="+title+"&minimum=1", true);
+                        http.open("GET", "//"+window.location.host+"/api/query/artist="+artist+"&title="+title+"&minimum=1", true);
                         http.timeout=10000;
                         http.onreadystatechange = function() {//Call a function when the state changes.
                             if(http.readyState == 4 && http.status == 200) {
@@ -138,7 +138,7 @@
                     $scope.show = "item";
                         $scope.selected = {};
                         var http = new XMLHttpRequest();
-                        http.open("GET", "http:\/\/"+window.location.host+url, true);
+                        http.open("GET", "//"+window.location.host+url, true);
                         http.timeout=10000;
                         http.onreadystatechange = function() {//Call a function when the state changes.
                             if(http.readyState == 4 && http.status == 200) {
