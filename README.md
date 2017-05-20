@@ -13,23 +13,23 @@ It is built using `Node.js` using the `async` library, `Express` for routing,
 The web front-end was made using `AngularJS`.
 Done as a weekend project to learn some backend and JS web framework tech.
 
-####Features and Things
+#### Features and Things
 * Searches `genius.com`, `songlyrics.com`, `lyricsmode.com` for lyrics, and returns the first hit in JSON form
 * Works on static sites, (no AngularJS sites)
 * Caches lyrics to the server's local "lyricScraper" mongoDB database
 * RESTful CRUD (Create-Read-Update-Delete) for queries implemented using HTTP verbs (`GET`, `POST`, `PUT`, `DELETE`)
 * Port `22096`
 
-####How to Get It Up and Running
+#### How to Get It Up and Running
 * Tried only on Arch Linux x64, but theres no reason why it wouldn't work elsewhere
 * Need `mongodb` (obviously), and (atleast for me) navigate to a new directory and `mkdir data && mongod --dbpath data`
 * Install dependencies with `npm install` if you clone this repo and navigate into its directory, otherwise the dependencies are listed in `package.json`
 * Run: `node lyricScraper.js`
 
-####Web Interface
+#### Web Interface
 * Go to the `/` directory on the hosted domain
 
-####Commands
+#### Commands
 * GET `/api` for friendly instructions like the ones below :D
 * GET `/api/query/artist=[name]&title=[name]&format=[extension,default=json]&minimum=[number of results]` to request new lyrics, will respond with data and unique lookup ID, multiple words are separated with `+`
 * POST `/api/search` to create a custom search (optional: with parameters as data), will return URL of new resource: `/api/search/xxxxxxxxxxxxxxxxxxxxxxxx`
