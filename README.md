@@ -4,6 +4,9 @@ lyricScraper is an AngularJS web app and RESTful Node.js based server API backed
 that fetches lyrics for given song artist and title on online sites, and caches the results. 
 The user can then access individual results through an ID or by various means (by Artist, Title, etc).
 
+![Screenshot1](lyricscraper.png?raw=true)
+
+
 Experimental version is up on Heroku in the link listed in the repo description. 
 It uses 1 Dyno for now.
 
